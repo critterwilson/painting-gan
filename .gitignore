@@ -1,0 +1,5 @@
+env/
+.vim/
+*.jpeg
+*.tfrec
+.DS_Store
