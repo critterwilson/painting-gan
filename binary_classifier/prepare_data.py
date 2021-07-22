@@ -1,6 +1,7 @@
 import os
 import shutil
 import numpy as np
+from typing import List
 
 HERE = os.path.abspath(__file__)
 ROOT = os.path.dirname(os.path.dirname(HERE))
@@ -9,12 +10,13 @@ MONET_DIR = os.path.join(ORIG_DATA, "monet_jpg")
 NON_MONET_DIR = os.path.join(ORIG_DATA, "photo_jpg")
 
 
-def check_and_create(dirname):
+def check_and_create(dirname: str) -> None:
+
     if not os.path.exists(dirname):
         os.mkdir(dirname)
 
 
-def copy_files(files, dirname, stage_dir, file_type):
+def copy_files(files: List[str], dirname: str, stage_dir: str, file_type: str) -> None:
 
     for count, file in enumerate(files):
         source = os.path.join(dirname, file)
@@ -22,7 +24,8 @@ def copy_files(files, dirname, stage_dir, file_type):
         shutil.copyfile(source, target)
 
 
-def split_and_move(dirname):
+def split_and_move(dirname: str) -> None:
+
     id = dirname.split("/")[-1].split("_")[0]
 
     files = os.listdir(dirname)
@@ -48,5 +51,6 @@ def split_and_move(dirname):
 
 
 if __name__ == "__main__":
+
     split_and_move(MONET_DIR)
     split_and_move(NON_MONET_DIR)
