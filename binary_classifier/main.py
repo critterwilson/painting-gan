@@ -54,9 +54,9 @@ def train(model, optimizer):
             image = image.view(-1, 256*256*3).to(torch.float32)
             prediction = model(image)
             loss = F.binary_cross_entropy(prediction.to(torch.float32, label)
-            optimizer.zero_grad()
+            optimizer.zero_grad(set_to_none=True)
             loss.backward()
-            optimizer.step
+            optimizer.step()
             
             if batch_number % 10 == 0:
                 print(f"Epoch: {epoch} \t |Batch: {batch_number} \t | Loss: {loss}")
