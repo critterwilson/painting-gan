@@ -4,24 +4,27 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 """
-- An optimizer simply changes the model parameters to reduce the loss
-- So they are problem agnostic, any optimizer will work. Some just perform better than others depending
-  on how difficult the optimization is.
+DC (2021-07-24) - An optimizer simply changes the model parameters to reduce the loss
+CW (2021-07-25) - When you say changes the model parameters, do you mean adjusts the dimension 
+    (i.e. adds columns that converts the labels into higher dimensions like support vector machines)
+    or is it just normalizing the numerical data to help it perform faster calculations?
+DC (2021-07-24) - So they are problem agnostic, any optimizer will work. Some just perform better than others depending
+    on how difficult the optimization is.
 """
-from torch.optim import Adam  # only optimizer I could find for binary classification
+from torch.optim import Adadelta
 from torchvision.io import read_image
 from torch.utils.data import Dataset, DataLoader
 
-BATCH_SIZE = 512
-LEARNING_RATE = 0.001
+BATCH_SIZE = 10
+LEARNING_RATE = 0.1
 EPOCHS = 2
 
 """
-- Lets go through this in our next meeting. It makes a lot more sense than what it looks, see some comments inline below
-- For pytorch datasets you need to write a __getitem__ method that accepts an index to tell the pytorch dataloaded how
-  to index into your data. Similarly you need to write a __len__ method so that the dataloader knows how big the dataset
-  is and when to stop. They are required methods that get called internally by dataloader, which is very powerful
-  because now we can write arbitrary dataloaders using plain python
+DC (2021-07-24) - Lets go through this in our next meeting. It makes a lot more sense than what it looks, see some comments inline below
+DC (2021-07-24) - For pytorch datasets you need to write a __getitem__ method that accepts an index to tell the pytorch dataloaded how
+    to index into your data. Similarly you need to write a __len__ method so that the dataloader knows how big the dataset
+    is and when to stop. They are required methods that get called internally by dataloader, which is very powerful
+    because now we can write arbitrary dataloaders using plain python
 """
 
 
@@ -57,25 +60,38 @@ class BinaryClassifier(nn.Module):
     def __init__(self):
         super(BinaryClassifier, self).__init__()
         """
-        - This is correct, we know it will perform poorly
-        - The last layer in the network should have a single node for binary classification
+        DC (2021-07-24) - This is correct, we know it will perform poorly
+        DC (2021-07-24) - The last layer in the network should have a single node for binary classification
         """
-        self.layer_1 = nn.Linear(in_features=256 * 256 * 3, out_features=1)  # ???
+        self.layer_1 = nn.Linear(in_features=256 * 256 * 3, out_features=256 * 256) 
+        self.layer_2 = nn.Linear(in_features=256 * 256, out_features=128 * 128)
+        self.layer_3 = nn.Linear(in_features=128 * 128, out_features=64 * 64)
+        self.layer_4 = nn.Linear(in_features=64 * 64, out_features=32 * 32)
+        self.layer_5 = nn.Linear(in_features=32 * 32, out_features=16 * 16)
+        self.layer_6 = nn.Linear(in_features=16 * 16, out_features=1)
+
+
 
     def forward(self, x):
         x = self.layer_1(x)
+        x = self.layer_2(x)
+        x = self.layer_3(x)
+        x = self.layer_4(x)
+        x = self.layer_5(x)
+        x = self.layer_6(x)
+        
         """
-        - Because we only have one hidden layer in the network, we do not need the relu as the sigmoid will be the
+        DC (2021-07-24) - Because we only have one hidden layer in the network, we do not need the relu as the sigmoid will be the
           activation function.
-        - This will change when we add more layers.
+        DC (2021-07-24) - This will change when we add more layers.
         """
         # x = F.relu(x)
         """
-        - softmax is for multiclass classification
-        - for binary classification last layer actication should be a sigmoid
+        DC (2021-07-24) - softmax is for multiclass classification
+        DC (2021-07-24) - for binary classification last layer actication should be a sigmoid
         """
-        # output = F.log_softmax(x, dim=1)  # ??? dim????
-        output = F.sigmoid(x)
+        # output = F.log_softmax(x, dim=1) 
+        output = F.sigmoid(x) # signmoid is best for binary classification
         return output
 
 
@@ -84,12 +100,13 @@ def train(model, optimizer):
         for batch_number, (image, label) in enumerate(train_dataloader):
             image = image.view(-1, 256 * 256 * 3).to(torch.float32)
             """
-            - Because image is cast to float32, need to cast label to float32 as well for the loss calculation
+            DC (2021-07-24) - Because image is cast to float32, need to cast label to float32 as well for the loss calculation
+            CW (2021-07-25) - Why do we have to cast the image into a float? Doesn't the data-loader do that anyways?
             """
             label = label.to(torch.float32)
             prediction = model(image)
             """
-            - In below loss there was a syntax error (missing bracket)
+            DC (2021-07-24) - In below loss there was a syntax error (missing bracket)
             """
             loss = F.binary_cross_entropy(prediction, label)
             optimizer.zero_grad()
@@ -102,7 +119,7 @@ def train(model, optimizer):
 
 if __name__ == "__main__":
     model = BinaryClassifier()
-    optimizer = Adam(model.parameters(), lr=LEARNING_RATE)
+    optimizer = Adadelta(model.parameters(), lr=LEARNING_RATE)
 
     train(model, optimizer)
     # for batch_number, (image, label) in enumerate(train_dataloader):
