@@ -2,6 +2,7 @@ import os
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+import seaborn as sns
 from torch.optim import Adam
 from torchvision.io import read_image
 from torch.utils.data import Dataset, DataLoader
@@ -111,6 +112,9 @@ class BinaryClassifier(nn.Module):
         output = F.sigmoid(x)  # signmoid is best for binary classification
         return output
 
+train_plot = []
+val_plot = []
+
 def train(model, optimizer):
     for epoch in range(EPOCHS):
         for batch_number, (image, label) in enumerate(train_dataloader):
@@ -138,6 +142,7 @@ def train(model, optimizer):
             optimizer.step
 
             if batch_number % 20 == 0:
+                train_plot.append(loss)
                 print(f"Epoch: {epoch} \t | Batch: {batch_number} \t | Loss: {loss}")
 
         val_loss = []
@@ -145,8 +150,13 @@ def train(model, optimizer):
             image = image.view(-1, IMAGE_DIM * IMAGE_DIM * 3).to(torch.float32)
             label = label.to(torch.float32)
             prediction = model(image)
-            val_loss.append(F.binary_cross_entropy(prediction, label))
+            loss = F.binary_cross_entropy(prediction, label)
+            val_loss.append(loss)
+            val_plot.append(loss)
+
         print(f"Validation for epoch: {epoch} \t | Avg. Loss: {sum(val_loss)/len(val_loss)}")
+
+# sns visualize train_plot vs val_plot
 
 if __name__ == "__main__":
     model = BinaryClassifier()
