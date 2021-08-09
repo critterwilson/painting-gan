@@ -2,7 +2,7 @@ import os
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from torch.optim import Adadelta
+from torch.optim import Adam
 from torchvision.io import read_image
 from torch.utils.data import Dataset, DataLoader
 from torchvision.transforms.functional import resize
@@ -21,7 +21,7 @@ DC (2021-07-24) - So they are problem agnostic, any optimizer will work. Some ju
     on how difficult the optimization is.
 """
 
-BATCH_SIZE = 32
+BATCH_SIZE = 64
 LEARNING_RATE = 0.01
 EPOCHS = 10
 IMAGE_DIM = 28
@@ -62,7 +62,7 @@ validation_dataset = ImageDataset("./data/validate")
 test_dataset = ImageDataset("./data/test")
 
 train_dataloader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True)
-validation_dataloader = DataLoader(validation_dataset, batch_size=BATCH_SIZE)
+validation_dataloader = DataLoader(validation_dataset, batch_size=BATCH_SIZE, shuffle=True)
 test_dataloader = DataLoader(test_dataset, batch_size=BATCH_SIZE)
 
 
@@ -111,7 +111,6 @@ class BinaryClassifier(nn.Module):
         output = F.sigmoid(x)  # signmoid is best for binary classification
         return output
 
-
 def train(model, optimizer):
     for epoch in range(EPOCHS):
         for batch_number, (image, label) in enumerate(train_dataloader):
@@ -138,12 +137,19 @@ def train(model, optimizer):
             loss.backward()
             optimizer.step
 
-            if batch_number % 2 == 0:
-                print(f"Epoch: {epoch} \t |Batch: {batch_number} \t | Loss: {loss}")
+            if batch_number % 20 == 0:
+                print(f"Epoch: {epoch} \t | Batch: {batch_number} \t | Loss: {loss}")
 
+        val_loss = []
+        for image, label in validation_dataloader:
+            image = image.view(-1, IMAGE_DIM * IMAGE_DIM * 3).to(torch.float32)
+            label = label.to(torch.float32)
+            prediction = model(image)
+            val_loss.append(F.binary_cross_entropy(prediction, label))
+        print(f"Validation for epoch: {epoch} \t | Avg. Loss: {sum(val_loss)/len(val_loss)}")
 
 if __name__ == "__main__":
     model = BinaryClassifier()
-    optimizer = Adadelta(model.parameters(), lr=LEARNING_RATE)
+    optimizer = Adam(model.parameters(), lr=LEARNING_RATE)
 
     train(model, optimizer)
